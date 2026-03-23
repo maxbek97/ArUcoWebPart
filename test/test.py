@@ -3,9 +3,9 @@ import base64
 import cv2
 import json
 
-ws = websocket.create_connection("ws://127.0.0.1:8000/ws")
+ws = websocket.create_connection("ws://127.0.0.1:8000/api/ws")
 
-img = cv2.imread("./test/test.jpg")  # твой маркер
+img = cv2.imread("./test/test2.jpg")  # твой маркер
 
 _, buffer = cv2.imencode('.jpg', img)
 img_base64 = base64.b64encode(buffer).decode()
