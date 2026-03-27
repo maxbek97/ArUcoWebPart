@@ -1,17 +1,23 @@
-from fastapi import FastAPI, WebSocket, Body
+from fastapi import FastAPI, WebSocket, Body, WebSocketDisconnect
 import base64
 import numpy as np
 import cv2
 from app.models.DictionaryRequest import DictionaryRequest
-
+from contextlib import asynccontextmanager
 from app.detector import detect_markers, set_dictionary
 from app.repository import load_payload_map
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global CURRENT_DICTIONARY, payload_map
 
-CURRENT_DICTIONARY = "DICT_4X4_50"
-payload_map = load_payload_map(CURRENT_DICTIONARY)
-set_dictionary(CURRENT_DICTIONARY)
+    CURRENT_DICTIONARY = "DICT_4X4_50"
+    payload_map = load_payload_map(CURRENT_DICTIONARY)
+    set_dictionary(CURRENT_DICTIONARY)
+
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.websocket("/api/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -51,12 +57,16 @@ async def websocket_endpoint(ws: WebSocket):
                 "frame_id": data["frame_id"],
                 "markers": markers
             })
+        except WebSocketDisconnect:
+            print("Client disconnected")
+            break   # 🔥 ВАЖНО — выходим из цикла
         except Exception as e:
             print(f"WebSocket loop error: {e}")
             try:
                 await ws.send_json({"error": str(e)})
             except:
                 pass  # если ws уже закрыт
+            
 
 
 

@@ -2,18 +2,53 @@ import websocket
 import base64
 import cv2
 import json
+import time
 
 ws = websocket.create_connection("ws://127.0.0.1:8000/api/ws")
+video_path = "./test/test3.mp4"  # замените на свой файл
+cap = cv2.VideoCapture(video_path)
 
-img = cv2.imread("./test/test2.jpg")  # твой маркер
+frame_id = 0
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break  # конец видео
 
-_, buffer = cv2.imencode('.jpg', img)
-img_base64 = base64.b64encode(buffer).decode()
+    # ресайз до безопасного размера, чтобы не было обрыва WS
+    max_dim = 1080
+    height, width = frame.shape[:2]
+    if max(height, width) > max_dim:
+        scale = max_dim / max(height, width)
+        frame = cv2.resize(frame, (int(width*scale), int(height*scale)))
 
-ws.send(json.dumps({
-    "frame_id": 1,
-    "image": img_base64
-}))
+    # кодируем в base64
+    _, buffer = cv2.imencode('.jpg', frame)
+    img_base64 = base64.b64encode(buffer).decode()
 
-result = ws.recv()
-print(result)
+    # отправляем
+    ws.send(json.dumps({
+        "frame_id": frame_id,
+        "image": img_base64
+    }))
+
+    # принимаем ответ
+    result = ws.recv()
+    print(f"[FRAME {frame_id}] -> {result}")
+
+    frame_id += 1
+    time.sleep(0.03)  # ~30 fps
+
+cap.release()
+ws.close()
+
+# img = cv2.imread("./test/test2.png")  # твой маркер
+# _, buffer = cv2.imencode('.png', img)
+# img_base64 = base64.b64encode(buffer).decode()
+# for i in range(100):
+#     ws.send(json.dumps({
+#         "frame_id": 1,
+#         "image": img_base64
+#     }))
+
+# result = ws.recv()
+# print(result)

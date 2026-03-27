@@ -4,25 +4,29 @@ def load_payload_map(dictionary_name: str):
     conn = get_connection()
     cursor = conn.cursor()
 
-    query = """
-        SELECT m.marker_id, m.payload_type, m.payload
-        FROM markers m
-        JOIN dictionaries d ON d.id = m.dictionary_id
-        WHERE d.name = %s
-    """
+    try:
+        query = """
+            SELECT m.marker_id, m.payload_type, m.payload
+            FROM markers m
+            JOIN dictionaries d ON d.id = m.dictionary_id
+            WHERE d.name = %s
+        """
 
-    cursor.execute(query, (dictionary_name,))
-    rows = cursor.fetchall()
+        cursor.execute(query, (dictionary_name,))
+        rows = cursor.fetchall()
 
-    payload_map = {}
+        payload_map = {}
 
-    for marker_id, p_type, payload in rows:
-        payload_map[marker_id] = {
-            "type": p_type,
-            "value": payload
-        }
+        for marker_id, p_type, payload in rows:
+            payload_map[marker_id] = {
+                "type": p_type,
+                "value": payload
+            }
 
-    cursor.close()
-    conn.close()
+        cursor.close()
+        conn.close()
 
-    return payload_map
+        return payload_map
+    finally:
+        cursor.close()
+        conn.close()

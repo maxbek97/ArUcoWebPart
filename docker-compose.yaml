@@ -14,10 +14,12 @@ services:
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # backend:
-  #   build: .
-  #   container_name: ar_backend
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - db
+  backend:
+    build: .
+    container_name: ar_backend
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+    - "8000:8000"

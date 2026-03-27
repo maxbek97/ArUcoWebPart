@@ -10,6 +10,9 @@ current_detector = None
 def set_dictionary(dict_name: str):
     global current_detector
 
+    if dict_name not in ARUCO_DICTS:
+        raise ValueError(f"Unknown dictionary {dict_name}")
+
     aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
     current_detector = cv2.aruco.ArucoDetector(aruco_dict)
 
