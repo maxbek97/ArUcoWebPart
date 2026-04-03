@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, Body, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import base64
 import numpy as np
 import cv2
@@ -6,18 +6,20 @@ from app.models.DictionaryRequest import DictionaryRequest
 from contextlib import asynccontextmanager
 from app.detector import detect_markers, set_dictionary
 from app.repository import load_payload_map
+import app.state as state
+from app.routers import admin
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global CURRENT_DICTIONARY, payload_map
-
-    CURRENT_DICTIONARY = "DICT_4X4_50"
-    payload_map = load_payload_map(CURRENT_DICTIONARY)
-    set_dictionary(CURRENT_DICTIONARY)
+    state.CURRENT_DICTIONARY = "DICT_4X4_50"
+    state.payload_map = load_payload_map(state.CURRENT_DICTIONARY)
+    set_dictionary(state.CURRENT_DICTIONARY)
 
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(admin.router)
 
 @app.websocket("/api/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -51,7 +53,7 @@ async def websocket_endpoint(ws: WebSocket):
                 print(f"Detector error: {e}")
             # добавляем payload
             for m in markers:
-                m["payload"] = payload_map.get(m["id"], {})
+                m["payload"] = state.payload_map.get(m["id"], {})
 
             await ws.send_json({
                 "frame_id": data["frame_id"],
@@ -66,28 +68,3 @@ async def websocket_endpoint(ws: WebSocket):
                 await ws.send_json({"error": str(e)})
             except:
                 pass  # если ws уже закрыт
-            
-
-
-
-@app.post("/api/admin/switch-dictionary")
-def switch_dictionary(req: DictionaryRequest):
-    global CURRENT_DICTIONARY, payload_map
-
-    dict_name = req.dict_name
-
-    if dict_name not in ["DICT_4X4_50", "DICT_5X5_50"]:
-        return {"status": "error", "message": f"Unknown dictionary '{dict_name}'"}
-
-    try:
-        payload_map = load_payload_map(dict_name)
-        set_dictionary(dict_name)
-        CURRENT_DICTIONARY = dict_name
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-    return {
-        "status": "ok",
-        "current_dictionary": CURRENT_DICTIONARY,
-        "markers_loaded": len(payload_map)
-    }

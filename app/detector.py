@@ -1,19 +1,16 @@
 import cv2
+from app.dict_map import DICT_MAP
 
-ARUCO_DICTS = {
-    "DICT_4X4_50": cv2.aruco.DICT_4X4_50,
-    "DICT_5X5_50": cv2.aruco.DICT_5X5_50,
-}
 
 current_detector = None
 
 def set_dictionary(dict_name: str):
     global current_detector
 
-    if dict_name not in ARUCO_DICTS:
+    if dict_name not in DICT_MAP:
         raise ValueError(f"Unknown dictionary {dict_name}")
 
-    aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
+    aruco_dict = cv2.aruco.getPredefinedDictionary(DICT_MAP[dict_name][0])
     current_detector = cv2.aruco.ArucoDetector(aruco_dict)
 
 
