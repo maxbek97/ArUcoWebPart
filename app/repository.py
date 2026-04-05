@@ -34,7 +34,6 @@ def load_payload_map(dictionary_name: str):
         conn.close()
 
 
-
 def get_all_markers() -> list[Marker_info]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -57,6 +56,7 @@ def get_all_markers() -> list[Marker_info]:
     finally:
         cursor.close()
         conn.close()
+
 
 def get_marker(dict_name: str, marker_id: int) -> Marker_info:
     conn = get_connection()
@@ -92,7 +92,7 @@ def get_marker(dict_name: str, marker_id: int) -> Marker_info:
         conn.close()
 
 
-def add_new_marker_info(marker_info: Marker_info):
+def add_new_marker_info(marker_info: Marker_info) -> Marker_info:
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -172,6 +172,36 @@ def update_marker_info(marker: Marker_info) -> Marker_info:
         conn.rollback()
         raise
 
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def delete_marker(dict_name: str, marker_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+            DELETE FROM markers
+            WHERE dictionary_name = %s
+              AND marker_id = %s
+            RETURNING dictionary_name; 
+        """
+        cursor.execute(
+            query, 
+            (
+                dict_name, 
+                marker_id
+            )
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Marker not found")
+        conn.commit()
+        return {"message": f"Marker {marker_id} from {dict_name} deleted"}
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         cursor.close()
         conn.close()

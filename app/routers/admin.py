@@ -10,7 +10,7 @@ import re
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
-@router.post("/switch-dictionary/")
+@router.post("/switch-dictionary")
 def switch_dictionary(req: DictionaryRequest):
 
     dict_name = req.dict_name
@@ -37,7 +37,7 @@ def switch_dictionary(req: DictionaryRequest):
     }
 
 
-@router.get("/markers/")
+@router.get("/markers")
 def read_markers():
     """Returns all markers from db"""
     try:
@@ -51,10 +51,10 @@ def read_markers():
         )
     
 
-@router.get("/markers/")
+@router.get("/markers/{dictionary_name}/{marker_id}")
 def read_one_marker(
-    dictionary_name: str = Query(...),
-    marker_id: int = Query(...)
+    dictionary_name: str,
+    marker_id: int
 ):
     """Returns chosen marker from db"""
     try:
@@ -68,7 +68,7 @@ def read_one_marker(
         )
 
 
-@router.post("/markers/")
+@router.post("/markers")
 def add_marker(marker_info: Marker_info):
     """Add a new marker info"""
     try:
@@ -92,12 +92,14 @@ def add_marker(marker_info: Marker_info):
             detail=f"Unknown server error '{str(e)}'"
         )
 
+
 @router.patch("/markers/")
 def update_marker(
     marker_info: Marker_info,
     dictionary_name: str = Query(...),
     marker_id: int = Query(...),
 ):
+    """Update marker info witch marker_id and dict_name"""
     try:
         if (
             marker_info.dictionary_name != dictionary_name or
@@ -123,6 +125,23 @@ def update_marker(
         )
     
 
+@router.delete("/markers/")
+def detete_marker(
+    dictionary_name: str = Query(...),
+    marker_id: int = Query(...),
+):
+    """Delete marker from db"""
+    try:
+        return delete_marker(dictionary_name, marker_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unknown server error '{str(e)}'"
+        )
+    
+    
 def validate_marker(marker: Marker_info):
     if marker.dictionary_name not in DICT_MAP:
         raise HTTPException(
