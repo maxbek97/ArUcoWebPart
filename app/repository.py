@@ -126,3 +126,52 @@ def add_new_marker_info(marker_info: Marker_info):
     finally:
         cursor.close()
         conn.close()
+
+
+def update_marker_info(marker: Marker_info) -> Marker_info:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+            UPDATE markers
+            SET payload_type = %s,
+                payload = %s
+            WHERE dictionary_name = %s
+                AND marker_id = %s
+            RETURNING dictionary_name, marker_id, payload_type, payload
+        """
+
+        cursor.execute(
+            query,
+            (
+                marker.payload_type,
+                Json(marker.payload),  # 🔥 не забываем
+                marker.dictionary_name,
+                marker.marker_id
+            )
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Marker not found"
+            )
+
+        conn.commit()
+
+        return Marker_info(
+            dictionary_name=row[0],
+            marker_id=row[1],
+            payload_type=row[2],
+            payload=row[3]
+        )
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conn.close()
