@@ -3,7 +3,7 @@ from app.detector import set_dictionary
 from app.repository import *
 import app.state as state
 from app.dict_map import DICT_MAP
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from psycopg2 import errors
 import cv2
 import re
@@ -37,19 +37,36 @@ def switch_dictionary(req: DictionaryRequest):
     }
 
 
-@router.get("/")
+@router.get("/markers")
 def read_markers():
-    """Returns all markers in db"""
+    """Returns all markers from db"""
     try:
         return get_all_markers()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Unknown server error '{str(e)}'"
         )
     
-
-@router.post("/add-marker")
+@router.get("/markers/")
+def read_one_marker(
+    dictionary_name: str = Query(...),
+    marker_id: int = Query(...)
+):
+    """Returns chosen marker from db"""
+    try:
+        return get_marker(dictionary_name, marker_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unknown server error '{str(e)}'"
+        )
+    
+@router.post("/markers")
 def add_marker(marker_info: Marker_info):
     """Add a new marker info"""
     try:

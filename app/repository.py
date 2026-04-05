@@ -1,6 +1,7 @@
 from app.db import get_connection
 from app.models.Marker_info import Marker_info
 from psycopg2.extras import Json
+from fastapi import HTTPException
 
 def load_payload_map(dictionary_name: str):
     conn = get_connection()
@@ -53,6 +54,39 @@ def get_all_markers() -> list[Marker_info]:
             payload=row[3]
         )
         for row in rows]
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_marker(dict_name: str, marker_id: int) -> Marker_info:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT dictionary_name, marker_id, payload_type, payload
+            FROM markers
+            WHERE dictionary_name = %s AND marker_id = %s
+        """
+        cursor.execute(
+            query,
+                (
+                    dict_name,
+                    marker_id
+                )
+            )
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(
+        status_code=404,
+        detail="Marker not found"
+    )
+        return Marker_info(
+            dictionary_name=row[0],
+            marker_id=row[1],
+            payload_type=row[2],
+            payload=row[3]
+        )
+
     finally:
         cursor.close()
         conn.close()
