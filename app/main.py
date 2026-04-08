@@ -7,8 +7,8 @@ from contextlib import asynccontextmanager
 from app.detector import detect_markers, set_dictionary
 from app.repository import load_payload_map
 import app.state as state
-from app.routers import admin
-
+from app.routers import admin_dictionaries
+from app.routers import admin_markers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,7 +19,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(admin.router)
+app.include_router(admin_dictionaries.router)
+app.include_router(admin_markers.router)
 
 @app.websocket("/api/ws")
 async def websocket_endpoint(ws: WebSocket):
