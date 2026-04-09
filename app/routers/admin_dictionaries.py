@@ -39,7 +39,9 @@ def switch_dictionary(req: DictionaryRequest):
 @router.get("/dictionaries")
 def get_dictionaries():
     try:
-        return {"dict_names" : [dictionary for dictionary in DICT_MAP.keys()]}
+        return {"current_dict": state.CURRENT_DICTIONARY,
+                "dict_names" : [dictionary for dictionary in DICT_MAP.keys()]
+                }
     except Exception as e:
         raise HTTPException(
             status_code=500,
