@@ -32,7 +32,7 @@ services:
 
   frontend:
     build:
-      context: ../webpart_aruco
+      context: ../ArUcoWebAdminPart
     container_name: ar_frontend
     restart: always
     ports:
