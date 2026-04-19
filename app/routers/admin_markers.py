@@ -160,6 +160,12 @@ def validate_marker(marker: Marker_info):
                 status_code=400,
                 detail="'value' must be <= 255 characters"
             )
+        
+        if len(value) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="'value' must be not empty"
+            )
 
     # 🤖 MODEL
     elif marker.payload_type == "model":
