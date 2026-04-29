@@ -77,11 +77,14 @@ def get_marker(dict_name: str, marker_id: int) -> MarkerInfoDTO:
                 )
             )
         row = cursor.fetchone()
+
         if row is None:
-            raise HTTPException(
-        status_code=404,
-        detail="Marker not found"
-    )
+            return None
+    #     if row is None:
+    #         raise HTTPException(
+    #     status_code=404,
+    #     detail="Marker not found"
+    # )
         return MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
@@ -156,10 +159,12 @@ def update_marker_info(marker: MarkerInfoDTO) -> MarkerInfoDTO:
         row = cursor.fetchone()
 
         if row is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Marker not found"
-            )
+            return None
+    #     if row is None:
+    #         raise HTTPException(
+    #     status_code=404,
+    #     detail="Marker not found"
+    # )
 
         conn.commit()
 
@@ -187,7 +192,7 @@ def delete_marker(dict_name: str, marker_id: int):
             DELETE FROM markers
             WHERE dictionary_name = %s
               AND marker_id = %s
-            RETURNING dictionary_name; 
+            RETURNING dictionary_name, marker_id, payload_type, payload 
         """
         cursor.execute(
             query, 
@@ -197,10 +202,17 @@ def delete_marker(dict_name: str, marker_id: int):
             )
         )
         row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Marker not found")
         conn.commit()
-        return {"message": f"Marker {marker_id} from {dict_name} deleted"}
+        if row is None:
+            return None
+        
+        return MarkerInfoDTO(
+            dictionary_name=row[0],
+            marker_id=row[1],
+            payload_type=row[2],
+            payload=row[3]
+        )
+
     except Exception:
         conn.rollback()
         raise

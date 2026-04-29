@@ -143,7 +143,19 @@ def detete_marker(
 ):
     """Delete marker from db"""
     try:
-        return delete_marker(dictionary_name, marker_id)
+        deleted = delete_marker(dictionary_name, marker_id)
+        if not deleted:
+            raise HTTPException(404, "Marker not found")
+        
+                # если модель — удаляем файл
+        if deleted.payload_type == "model":
+            filename = deleted.payload.get("src")
+            if filename:
+                delete_model_file(filename)
+
+        return {
+            "message": f"Marker {marker_id} from {dictionary_name} deleted"
+        }
     except HTTPException:
         raise
     except Exception as e:

@@ -127,6 +127,11 @@ def save_model_file(file: UploadFile) -> str:
 
 
 def delete_model_file(filename: str) -> None:
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not filename:
+        return
+    
+    safe_filename = sanitize_filename(filename)
+
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
     if os.path.exists(file_path):
         os.remove(file_path)
