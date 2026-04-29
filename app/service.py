@@ -5,6 +5,7 @@ from fastapi import HTTPException
 import cv2
 from fastapi import UploadFile
 import uuid
+from fastapi.responses import FileResponse
 
 UPLOAD_DIR = "storage/models"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -135,3 +136,19 @@ def delete_model_file(filename: str) -> None:
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
     if os.path.exists(file_path):
         os.remove(file_path)
+
+def download_model_file(filename: str) -> FileResponse:
+    if not filename:
+        raise HTTPException(status_code=400, detail="Empty filename")
+    
+    safe_filename = sanitize_filename(filename)
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Model not found")
+    
+    return FileResponse(
+        path=file_path,
+        media_type="model/gltf-binary",
+        filename=filename
+    )

@@ -36,16 +36,26 @@ def load_payload_map(dictionary_name: str):
         conn.close()
 
 
-def get_all_markers() -> list[MarkerInfoDTO]:
+def get_all_markers(dict_name: str | None = None) -> list[MarkerInfoDTO]:
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        query = """
-            SELECT dictionary_name, marker_id, payload_type, payload
-            FROM markers
-            ORDER BY dictionary_name, marker_id
-        """
-        cursor.execute(query)
+        if dict_name:
+            query = """
+                SELECT dictionary_name, marker_id, payload_type, payload
+                FROM markers
+                WHERE dictionary_name = %s
+                ORDER BY marker_id
+            """
+            cursor.execute(query, (dict_name,))
+        else:
+            query = """
+                SELECT dictionary_name, marker_id, payload_type, payload
+                FROM markers
+                ORDER BY dictionary_name, marker_id
+            """
+            cursor.execute(query)
+            
         rows = cursor.fetchall()
         return [
         MarkerInfoDTO(
