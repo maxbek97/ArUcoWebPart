@@ -29,6 +29,8 @@ services:
     - "8000:8000"
     networks:
       - diploma_ar_network
+    volumes:
+    - ./storage:/app/storage
 
   frontend:
     build:

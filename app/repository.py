@@ -1,7 +1,9 @@
 from app.db import get_connection
-from app.models.Marker_info import Marker_info
+from app.models.Marker_info import MarkerInfoDTO
 from psycopg2.extras import Json
-from fastapi import HTTPException
+import os
+import shutil
+from fastapi import UploadFile, HTTPException
 
 def load_payload_map(dictionary_name: str):
     conn = get_connection()
@@ -34,7 +36,7 @@ def load_payload_map(dictionary_name: str):
         conn.close()
 
 
-def get_all_markers() -> list[Marker_info]:
+def get_all_markers() -> list[MarkerInfoDTO]:
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -46,7 +48,7 @@ def get_all_markers() -> list[Marker_info]:
         cursor.execute(query)
         rows = cursor.fetchall()
         return [
-        Marker_info(
+        MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
             payload_type=row[2],
@@ -58,7 +60,7 @@ def get_all_markers() -> list[Marker_info]:
         conn.close()
 
 
-def get_marker(dict_name: str, marker_id: int) -> Marker_info:
+def get_marker(dict_name: str, marker_id: int) -> MarkerInfoDTO:
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -80,7 +82,7 @@ def get_marker(dict_name: str, marker_id: int) -> Marker_info:
         status_code=404,
         detail="Marker not found"
     )
-        return Marker_info(
+        return MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
             payload_type=row[2],
@@ -92,7 +94,7 @@ def get_marker(dict_name: str, marker_id: int) -> Marker_info:
         conn.close()
 
 
-def add_new_marker_info(marker_info: Marker_info) -> Marker_info:
+def add_new_marker_info(marker_info: MarkerInfoDTO) -> MarkerInfoDTO:
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -113,7 +115,7 @@ def add_new_marker_info(marker_info: Marker_info) -> Marker_info:
         row = cursor.fetchone()
         conn.commit()
 
-        return Marker_info(
+        return MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
             payload_type=row[2],
@@ -128,7 +130,7 @@ def add_new_marker_info(marker_info: Marker_info) -> Marker_info:
         conn.close()
 
 
-def update_marker_info(marker: Marker_info) -> Marker_info:
+def update_marker_info(marker: MarkerInfoDTO) -> MarkerInfoDTO:
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -161,7 +163,7 @@ def update_marker_info(marker: Marker_info) -> Marker_info:
 
         conn.commit()
 
-        return Marker_info(
+        return MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
             payload_type=row[2],
