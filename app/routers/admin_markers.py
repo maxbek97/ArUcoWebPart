@@ -112,12 +112,24 @@ async def add_marker(
 
 @router.patch("/markers/")
 def update_marker(
-    marker_info: MarkerInfoDTO,
+    form: MarkerForm = Depends(),
+    file: UploadFile = File(None),
     dictionary_name: str = Query(...),
     marker_id: int = Query(...),
 ):
     """Update marker info witch marker_id and dict_name"""
     try:
+        try:
+            payload_dict = json.loads(form.payload)
+        except json.JSONDecodeError:
+            raise HTTPException(400, "Invalid JSON in payload")
+        marker_info = MarkerInfoDTO(
+            dictionary_name=form.dictionary_name,
+            marker_id=form.marker_id,
+            payload_type=form.payload_type,
+            payload=payload_dict
+        )
+
         if (
             marker_info.dictionary_name != dictionary_name or
             marker_info.marker_id != marker_id
@@ -126,8 +138,68 @@ def update_marker(
                 status_code=400,
                 detail="Path params and body must match"
             )
+        
+                # 🔍 получаем старый маркер
+        old_marker = get_marker(dictionary_name, marker_id)
+        if old_marker is None:
+            raise HTTPException(404, "Marker not found")
+        
         validate_marker(marker_info)
-        return update_marker_info(marker_info)
+
+
+        # =========================
+        # 🧠 ЛОГИКА ОБНОВЛЕНИЯ
+        # =========================
+
+        # 1. TEXT
+        if marker_info.payload_type == "text":
+            if file is not None:
+                raise HTTPException(400, "File is not allowed for text payload")
+            updated = update_marker_info(marker_info)
+            if updated is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Marker not found"
+                )
+            # если раньше была модель — удаляем файл
+            if old_marker.payload_type == "model":
+                old_filename = old_marker.payload.get("src")
+                delete_model_file(old_filename)
+
+
+            return updated 
+        
+        # 2. Модель
+        if marker_info.payload_type == "model":
+
+            if file is None:
+                raise HTTPException(400, "File is required for model")
+            
+            saved_filename = save_model_file(file)
+            marker_info.payload["src"] = saved_filename
+
+            try:
+                updated = update_marker_info(marker_info)
+                if updated is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Marker not found"
+                    )
+
+                # если раньше была модель — удалить старый файл
+                if old_marker.payload_type == "model":
+                    old_filename = old_marker.payload.get("src")
+
+                    if old_filename != saved_filename:
+                        delete_model_file(old_filename)
+
+                return updated
+
+            except Exception:
+                # если БД упала — удаляем новый файл
+                delete_model_file(saved_filename)
+                raise
+
     except HTTPException:
         raise
     except errors.InvalidTextRepresentation:
