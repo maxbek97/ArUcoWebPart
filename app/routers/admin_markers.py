@@ -37,7 +37,13 @@ def read_one_marker(
 ):
     """Returns chosen marker from db"""
     try:
-        return get_marker(dictionary_name, marker_id)
+        marker = get_marker(dictionary_name, marker_id)
+        if marker is None:
+            raise HTTPException(
+        status_code=404,
+        detail="Marker not found"
+    )
+        return marker
     except HTTPException:
         raise
     except Exception as e:

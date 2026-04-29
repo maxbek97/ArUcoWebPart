@@ -77,14 +77,11 @@ def get_marker(dict_name: str, marker_id: int) -> MarkerInfoDTO:
                 )
             )
         row = cursor.fetchone()
-
+        conn.commit()
+        
         if row is None:
             return None
-    #     if row is None:
-    #         raise HTTPException(
-    #     status_code=404,
-    #     detail="Marker not found"
-    # )
+
         return MarkerInfoDTO(
             dictionary_name=row[0],
             marker_id=row[1],
@@ -157,6 +154,7 @@ def update_marker_info(marker: MarkerInfoDTO) -> MarkerInfoDTO:
         )
 
         row = cursor.fetchone()
+        conn.commit()
 
         if row is None:
             return None
@@ -166,7 +164,7 @@ def update_marker_info(marker: MarkerInfoDTO) -> MarkerInfoDTO:
     #     detail="Marker not found"
     # )
 
-        conn.commit()
+        
 
         return MarkerInfoDTO(
             dictionary_name=row[0],
