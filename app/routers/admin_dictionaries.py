@@ -48,17 +48,16 @@ def get_dictionaries():
             detail=f"Unknown server error '{str(e)}'"
         )
     
-@router.get("/dictionaries/models")
-def get_dictionary_models(req: DictionaryRequest):
+@router.get("/dictionaries/{dict_name}/models")
+def get_dictionary_models(dict_name: str):
     """Return list of names model files by them dictionary name"""
-    dictionary_name = req.dict_name
-    
-    if dictionary_name not in DICT_MAP:
+
+    if dict_name not in DICT_MAP:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown dictionary '{dictionary_name}'"
+            detail=f"Unknown dictionary '{dict_name}'"
         )
-    markers = get_all_markers(dictionary_name)
+    markers = get_all_markers(dict_name)
 
     return [ m.payload["src"]
         for m in markers
