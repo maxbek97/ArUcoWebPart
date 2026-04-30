@@ -9,6 +9,7 @@ from psycopg2 import errors
 import cv2
 import re
 from fastapi import Depends, UploadFile, File
+from typing import Annotated, Optional
 import json
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -17,10 +18,12 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 @router.get("/markers")
-def read_markers():
+def read_markers(
+    dict_name: Annotated[Optional[str], Query(...)] = None
+):
     """Returns all markers from db"""
     try:
-        return get_all_markers()
+        return get_all_markers(dict_name)
     except HTTPException:
         raise
     except Exception as e:
