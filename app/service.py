@@ -6,6 +6,8 @@ import cv2
 from fastapi import UploadFile
 import uuid
 from fastapi.responses import FileResponse
+import hashlib
+
 
 UPLOAD_DIR = "storage/models"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -152,3 +154,15 @@ def download_model_file(filename: str) -> FileResponse:
         media_type="model/gltf-binary",
         filename=filename
     )
+
+def calculate_models_hash(dict_name: str) -> str:
+    models = [
+        m.payload["src"]
+        for m in get_all_markers(dict_name)
+        if m.payload_type == "model"
+    ]
+
+    models.sort()
+    joined = "|".join(models)
+
+    return hashlib.sha1(joined.encode()).hexdigest()

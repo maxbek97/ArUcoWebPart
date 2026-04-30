@@ -5,7 +5,7 @@ import app.state as state
 from app.dict_map import DICT_MAP
 from fastapi import APIRouter, HTTPException, Query
 from psycopg2 import errors
-from app.service import download_model_file
+from app.service import download_model_file, calculate_models_hash
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -32,7 +32,8 @@ def switch_dictionary(req: DictionaryRequest):
 
     return {
         "current_dictionary": state.CURRENT_DICTIONARY,
-        "markers_loaded": len(state.payload_map)
+        "markers_loaded": len(state.payload_map),
+        "models_hash": calculate_models_hash(state.CURRENT_DICTIONARY)
     }
 
 @router.get("/dictionaries")
@@ -40,7 +41,8 @@ def get_dictionaries():
     """Return list of dictionaries"""
     try:
         return {"current_dict": state.CURRENT_DICTIONARY,
-                "dict_names" : [dictionary for dictionary in DICT_MAP.keys()]
+                "dict_names" : [dictionary for dictionary in DICT_MAP.keys()],
+                "models_hash": calculate_models_hash(state.CURRENT_DICTIONARY)
                 }
     except Exception as e:
         raise HTTPException(
