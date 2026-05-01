@@ -21,8 +21,9 @@ def switch_dictionary(req: DictionaryRequest):
         )
 
     try:
-        state.payload_map = load_payload_map(dict_name)
+
         set_dictionary(dict_name)
+        state.payload_map = load_payload_map(dict_name)
         state.CURRENT_DICTIONARY = dict_name
     except Exception as e:
         raise HTTPException(

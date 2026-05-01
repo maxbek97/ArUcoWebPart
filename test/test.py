@@ -5,14 +5,35 @@ import json
 import time
 
 ws = websocket.create_connection("ws://127.0.0.1:8000/api/ws")
+
+
+frame_id = 0
+# --- 1. INIT ---
+camera_matrix = [
+    [1000.0, 0.0, 640.0],
+    [0.0, 1000.0, 360.0],
+    [0.0, 0.0, 1.0]
+]
+
+dist_coeffs = [0, 0, 0, 0, 0]
+
+marker_length = 0.05  # 5 см
+
+ws.send(json.dumps({
+    "type": "init",
+    "camera_matrix": camera_matrix,
+    "dist_coeffs": dist_coeffs,
+    "marker_length": marker_length
+}))
+print("INIT RESPONSE:", ws.recv())
+
 video_path = "./test/test3.mp4"  # замените на свой файл
 cap = cv2.VideoCapture(video_path)
 
-frame_id = 0
 while True:
     ret, frame = cap.read()
     if not ret:
-        break  # конец видео
+        break
 
     # ресайз до безопасного размера, чтобы не было обрыва WS
     max_dim = 1080
@@ -27,6 +48,7 @@ while True:
 
     # отправляем
     ws.send(json.dumps({
+        "type": "frame",
         "frame_id": frame_id,
         "image": img_base64
     }))

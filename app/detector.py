@@ -15,6 +15,7 @@ def set_dictionary(dict_name: str):
 
 
 def detect_markers(frame):
+    
     global current_detector
     if current_detector is None:
         raise Exception("Detector not initialized")

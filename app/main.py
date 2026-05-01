@@ -26,9 +26,35 @@ app.include_router(admin_markers.router)
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
 
+    camera_matrix = None
+    dist_coeffs = None
+    marker_length = None
+
+    # print("Актуальный словарь " + state.CURRENT_DICTIONARY)
+
     while True:
         try:
             data = await ws.receive_json()
+            msg_type = data.get("type")
+
+            # --- INIT ---
+            if msg_type == "init":
+                try:
+                    camera_matrix = np.array(data["camera_matrix"], dtype=np.float32)
+                    dist_coeffs = np.array(data["dist_coeffs"], dtype=np.float32)
+                    marker_length = float(data["marker_length"])
+
+                    await ws.send_json({"status": "initialized"})
+                except Exception as e:
+                    await ws.send_json({"error": f"Init error: {str(e)}"})
+
+                continue
+
+            if msg_type == "frame":
+                if camera_matrix is None:
+                    await ws.send_json({"error": "Not initialized"})
+                    continue
+
             img_b64 = data.get("image")
             frame_id = data.get("frame_id")
 
@@ -37,6 +63,7 @@ async def websocket_endpoint(ws: WebSocket):
                     "error": "Missing 'image' or 'frame_id'"
                 })
                 continue
+
             # decode image
             try:
                 img_bytes = base64.b64decode(data["image"])
@@ -47,13 +74,28 @@ async def websocket_endpoint(ws: WebSocket):
             except Exception as e:
                 await ws.send_json({"error": f"Image decode error: {str(e)}"})
                 continue
-            try:
-                markers = detect_markers(frame)
-            except Exception as e:
-                markers = []
-                print(f"Detector error: {e}")
-            # добавляем payload
+
+
+            markers = detect_markers(frame)
             for m in markers:
+                corners = np.array(m["corners"], dtype=np.float32).reshape((1, 4, 2))
+
+                try:
+                    rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
+                        corners,
+                        marker_length,
+                        camera_matrix,
+                        dist_coeffs
+                    )
+
+                    m["rvec"] = rvecs[0][0].tolist()
+                    m["tvec"] = tvecs[0][0].tolist()
+
+                except Exception as e:
+                    print(e)
+                    m["rvec"] = None
+                    m["tvec"] = None
+
                 m["payload"] = state.payload_map.get(m["id"], {})
 
             await ws.send_json({
@@ -62,7 +104,7 @@ async def websocket_endpoint(ws: WebSocket):
             })
         except WebSocketDisconnect:
             print("Client disconnected")
-            break   # 🔥 ВАЖНО — выходим из цикла
+            break
         except Exception as e:
             print(f"WebSocket loop error: {e}")
             try:

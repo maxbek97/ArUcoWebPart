@@ -27,9 +27,7 @@ def load_payload_map(dictionary_name: str):
                 "value": payload
             }
 
-        cursor.close()
-        conn.close()
-
+        # print(f"[load_payload_map] loaded {len(payload_map)} markers for {dictionary_name}")
         return payload_map
     finally:
         cursor.close()
