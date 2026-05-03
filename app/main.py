@@ -47,61 +47,64 @@ async def websocket_endpoint(ws: WebSocket):
                     await ws.send_json({"status": "initialized"})
                 except Exception as e:
                     await ws.send_json({"error": f"Init error: {str(e)}"})
-
                 continue
 
-            if msg_type == "frame":
+            elif msg_type == "frame":
                 if camera_matrix is None:
+                    print('"error": "Not initialized"')
                     await ws.send_json({"error": "Not initialized"})
                     continue
 
-            img_b64 = data.get("image")
-            frame_id = data.get("frame_id")
+                img_b64 = data.get("image")
+                frame_id = data.get("frame_id")
 
-            if img_b64 is None or frame_id is None:
-                await ws.send_json({
-                    "error": "Missing 'image' or 'frame_id'"
-                })
-                continue
+                if img_b64 is None or frame_id is None:
+                    await ws.send_json({
+                        "error": "Missing 'image' or 'frame_id'"
+                    })
+                    continue
 
-            # decode image
-            try:
-                img_bytes = base64.b64decode(data["image"])
-                np_arr = np.frombuffer(img_bytes, np.uint8)
-                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-                if frame is None:
-                        raise ValueError("Failed to decode image")
-            except Exception as e:
-                await ws.send_json({"error": f"Image decode error: {str(e)}"})
-                continue
-
-
-            markers = detect_markers(frame)
-            for m in markers:
-                corners = np.array(m["corners"], dtype=np.float32).reshape((1, 4, 2))
-
+                # decode image
                 try:
-                    rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
-                        corners,
-                        marker_length,
-                        camera_matrix,
-                        dist_coeffs
-                    )
-
-                    m["rvec"] = rvecs[0][0].tolist()
-                    m["tvec"] = tvecs[0][0].tolist()
-
+                    img_bytes = base64.b64decode(data["image"])
+                    np_arr = np.frombuffer(img_bytes, np.uint8)
+                    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                    if frame is None:
+                        raise ValueError("Failed to decode image")
                 except Exception as e:
-                    print(e)
-                    m["rvec"] = None
-                    m["tvec"] = None
+                    await ws.send_json({"error": f"Image decode error: {str(e)}"})
+                    continue
 
-                m["payload"] = state.payload_map.get(m["id"], {})
 
-            await ws.send_json({
-                "frame_id": data["frame_id"],
-                "markers": markers
-            })
+                markers = detect_markers(frame)
+                for m in markers:
+                    corners = np.array(m["corners"], dtype=np.float32).reshape((1, 4, 2))
+
+                    try:
+                        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
+                            corners,
+                            marker_length,
+                            camera_matrix,
+                            dist_coeffs
+                        )
+
+                        m["rvec"] = rvecs[0][0].tolist()
+                        m["tvec"] = tvecs[0][0].tolist()
+
+                    except Exception as e:
+                        print(e)
+                        m["rvec"] = None
+                        m["tvec"] = None
+
+                    m["payload"] = state.payload_map.get(m["id"], {})
+
+                await ws.send_json({
+                    "frame_id": data["frame_id"],
+                    "markers": markers
+                })
+            else:
+                await ws.send_json({"error": f"Unknown message type: {msg_type}"})
+            
         except WebSocketDisconnect:
             print("Client disconnected")
             break
